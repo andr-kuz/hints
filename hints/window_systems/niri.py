@@ -44,9 +44,23 @@ class Niri(WindowSystem):
 
         :return: Active window extents (x, y, width, height).
         """
-        output_logical = self._focused_output["logical"]
         layout = self._focused_window["layout"]
+        
+        try:
+            res = run(["${pkgs.niri}/bin/niri", "msg", "-j", "windows"], capture_output=True, check=True)
+            all_windows = loads(res.stdout.decode("utf-8"))
+            for w in all_windows:
+                if w.get("is_focused") or w.get("id") == self._focused_window.get("id"):
+                    return (
+                        int(w["layout"]["x"]),
+                        int(w["layout"]["y"]),
+                        int(w["layout"]["width"]),
+                        int(w["layout"]["height"])
+                    )
+        except Exception:
+            pass
 
+        output_logical = self._focused_output["logical"]
         tile_pos = layout.get("tile_pos_in_workspace_view")
         if tile_pos is not None:
             # Floating windows: niri populates tile_pos_in_workspace_view
@@ -76,7 +90,6 @@ class Niri(WindowSystem):
     @property
     def focused_applicaiton_name(self) -> str:
         """Get focused application name.
-
         This name is the name used to identify applications for per-
         application rules.
 
